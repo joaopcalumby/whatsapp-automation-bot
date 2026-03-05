@@ -1,0 +1,10 @@
+# Ignorar arquivos de dados privados
+leads.xlsx
+*.csv
+*.xlsx
+
+# Ignorar pastas do Python e VS Code
+__pycache__/
+.vscode/
+venv/
+.env
