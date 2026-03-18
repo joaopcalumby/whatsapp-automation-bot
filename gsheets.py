@@ -5,9 +5,43 @@ import re
 
 def baixar_e_ler_planilha(diretorio):
     """
-    Pede o ID/Link da planilha ao usuário, faz o download via Google Sheets API (Export)
-    e retorna o DataFrame do pandas junto com o caminho local onde o arquivo foi salvo.
+    Verifica se já existe uma planilha local e permite utilizá-la. Caso contrário, ou
+    se o usuário preferir baixar os dados frescos, pede o Link da planilha, faz o 
+    download via Google Sheets API e retorna o DataFrame pandas.
     """
+    arquivo_planilha_local = os.path.join(diretorio, "leads_local.xlsx")
+
+    # Verifica se já existe um arquivo local com envios parciais
+    if os.path.exists(arquivo_planilha_local):
+        print("\n--- Planilha Local Encontrada ---")
+        usar_local = input(
+            "Foi detectado um arquivo 'leads_local.xlsx' de sessões anteriores.\n"
+            "Deseja usar essa planilha para continuar de onde parou? (s/n): "
+        ).strip().lower()
+
+        if usar_local == 's':
+            print("\nLendo os dados transferidos para o arquivo local...")
+            try:
+                df = pd.read_excel(arquivo_planilha_local)
+                df.columns = [str(col).strip().lower() for col in df.columns]
+                
+                print("✅ Leitura local bem-sucedida!")
+                print(f"📊 Colunas localizadas: {', '.join(df.columns)}")
+                print(f"👥 Total de contatos identificados: {len(df)}")
+                
+                if "phone" not in df.columns:
+                    print("\n❌ ERRO: Coluna 'phone' não encontrada na planilha local.")
+                    exit(1)
+                
+                if "status" not in df.columns:
+                    df["status"] = ""
+                df["status"] = df["status"].astype("object")
+                
+                return df, arquivo_planilha_local
+            except Exception as e:
+                print(f"\n❌ Erro ao ler planilha local: {e}")
+                exit(1)
+
     print("\n--- Configuração da Base de Leads ---")
     entrada_usuario = input(
         "Digite o Link ou o ID da planilha do Google Sheets (precisa estar como 'Qualquer pessoa com o link'): "
@@ -22,8 +56,6 @@ def baixar_e_ler_planilha(diretorio):
 
     # Monta a URL de exportação direta do arquivo no formato XLSX
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=xlsx"
-
-    arquivo_planilha_local = os.path.join(diretorio, "leads_local.xlsx")
 
     try:
         print("\nBaixando a planilha do Google Sheets para uso local...")
